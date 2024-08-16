@@ -86,10 +86,9 @@ class Game {
   }
 
   startGame() {
-    // Place ships for both players
+
     this.setupBoards();
 
-    // Begin the game loop
     while (!this.isGameOver()) {
       this.takeTurn();
       this.switchPlayer();
@@ -99,11 +98,11 @@ class Game {
   }
 
   setupBoards() {
-    // Setup player 1
+
     this.player1.gameboard.placeShip(new Ship(3), 1, 1, "horizontal");
     this.player1.gameboard.placeShip(new Ship(2), 4, 4, "vertical");
 
-    // Setup player 2 (Computer)
+
     this.player2.gameboard.placeShip(new Ship(3), 0, 0, "horizontal");
     this.player2.gameboard.placeShip(new Ship(2), 3, 3, "vertical");
   }
@@ -139,5 +138,67 @@ class Game {
   }
 }
 
+class UI {
+  constructor(playerBoardElement, computerBoardElement) {
+    this.playerBoardElement = playerBoardElement;
+    this.computerBoardElement = computerBoardElement;
+  }
+
+  renderBoard(gameboard, boardElement, isPlayer = false) {
+    boardElement.innerHTML = ''; // Clear the board
+    for (let y = 0; y < gameboard.size; y++) {
+      for (let x = 0; x < gameboard.size; x++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.x = x;
+        cell.dataset.y = y;
+
+        if (gameboard.board[y][x] === 'hit') {
+          cell.classList.add('hit');
+        } else if (gameboard.board[y][x] === 'miss') {
+          cell.classList.add('miss');
+        } else if (isPlayer && gameboard.board[y][x] instanceof Ship) {
+          cell.classList.add('ship');
+        }
+
+        boardElement.appendChild(cell);
+      }
+    }
+  }
+
+  attachEventListeners(game, computerBoardElement) {
+    computerBoardElement.addEventListener('click', (e) => {
+      const x = e.target.dataset.x;
+      const y = e.target.dataset.y;
+
+      if (x !== undefined && y !== undefined) {
+        game.currentPlayer.makeMove(game.getOpponent().gameboard, parseInt(x), parseInt(y));
+        this.renderBoard(game.player1.gameboard, this.playerBoardElement, true);
+        this.renderBoard(game.player2.gameboard, this.computerBoardElement);
+        
+        if (game.isGameOver()) {
+          alert(`${game.getWinner().name} wins!`);
+          computerBoardElement.removeEventListener('click', arguments.callee);
+        } else {
+          game.switchPlayer();
+        }
+      }
+    });
+  }
+}
+
 const game = new Game();
+game.setupBoards();
+
+const playerBoardElement = document.getElementById('player-board');
+const computerBoardElement = document.getElementById('computer-board');
+const ui = new UI(playerBoardElement, computerBoardElement);
+
+ui.renderBoard(game.player1.gameboard, playerBoardElement, true);
+
+ui.renderBoard(game.player2.gameboard, computerBoardElement);
+
+ui.attachEventListeners(game, computerBoardElement);
+
+
 game.startGame();
